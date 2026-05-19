@@ -1,0 +1,169 @@
+.Dd May 19, 2026
+.Dt BITUTILS 3
+.Os
+.Sh NAME
+.Nm SET_BIT ,
+.Nm CLEAR_BIT ,
+.Nm TOGGLE_BIT ,
+.Nm TEST_BIT ,
+.Nm CLZ ,
+.Nm CTZ ,
+.Nm POPCNT ,
+.Nm BSR ,
+.Nm POPLSB64 ,
+.Nm POPMSB64 ,
+.Nm LOGBITS ,
+.Nm logbits_width
+.Nd type-safe bitwise manipulation, counting, and debugging macros
+.Sh SYNOPSIS
+.In bitutils.h
+.Fn SET_BIT "x" "n"
+.Fn CLEAR_BIT "x" "n"
+.Fn TOGGLE_BIT "x" "n"
+.Fn TEST_BIT "x" "n"
+.Fn CLZ "x"
+.Fn CTZ "x"
+.Fn POPCNT "x"
+.Fn BSR "x"
+.Fn POPLSB64 "p"
+.Fn POPMSB64 "p"
+.Fn LOGBITS "x"
+.Ft static inline void
+.Fn logbits_width "u64 x" "int n"
+.Sh DESCRIPTION
+The provided macros and functions perform advanced bitwise manipulation, counting, scanning, and visual debugging operations.
+.Pp
+The first group of macros provide standard bit-level toggling based on a bit index
+.Fa n :
+.Bl -tag -width indent
+.It Fn SET_BIT "x" "n"
+Sets the
+.Fa n Ns -th
+bit in the value
+.Fa x .
+.It Fn CLEAR_BIT "x" "n"
+Clears the
+.Fa n Ns -th
+bit in the value
+.Fa x .
+.It Fn TOGGLE_BIT "x" "n"
+Flips the state of the
+.Fa n Ns -th
+bit in the value
+.Fa x .
+.It Fn TEST_BIT "x" "n"
+Returns non-zero if the
+.Fa n Ns -th
+bit in
+.Fa x
+is set, and zero otherwise.
+.El
+.Pp
+The second group of macros relies on C11
+.Ic _Generic
+selection to automatically route to the correct underlying compiler built-in
+(e.g.,
+.Fn __builtin_clz ,
+.Fn __builtin_clzl ,
+.Fn __builtin_clzll )
+based on whether the passed argument is an
+.Vt "unsigned int" ,
+.Vt "unsigned long" ,
+or
+.Vt "unsigned long long" .
+They also utilize GNU statement expressions to guarantee single evaluation of
+.Fa x ,
+making them safe against side effects.
+.Bl -tag -width indent
+.It Fn CLZ "x"
+Count Leading Zeros. Returns the number of leading 0-bits in
+.Fa x ,
+starting at the most significant bit.
+.It Fn CTZ "x"
+Count Trailing Zeros. Returns the number of trailing 0-bits in
+.Fa x ,
+starting at the least significant bit.
+.It Fn POPCNT "x"
+Population Count. Returns the total number of 1-bits (set bits) in
+.Fa x .
+.It Fn BSR "x"
+Bit Scan Reverse. Returns the zero-based index of the highest (most significant) set bit in
+.Fa x .
+.El
+.Pp
+The third group provides destructive bit-popping macros specifically designed for 64-bit unsigned integers:
+.Bl -tag -width indent
+.It Fn POPLSB64 "p"
+Takes a pointer
+.Fa p
+to a
+.Vt uint64_t .
+Identifies the least significant set bit, clears it in the underlying memory, and returns its index.
+.It Fn POPMSB64 "p"
+Takes a pointer
+.Fa p
+to a
+.Vt uint64_t .
+Identifies the most significant set bit, clears it in the underlying memory, and returns its index.
+.El
+.Pp
+The final group handles visual debugging and logging of bit states:
+.Bl -tag -width indent
+.It Fn LOGBITS "x"
+A macro that prints the binary representation of
+.Fa x
+to standard output. It automatically determines the bit-width based on the size of
+.Fa x .
+Set bits are represented by 'X' and cleared bits by '-'. A space is inserted every 8 bits for readability, followed by a newline.
+.It Fn logbits_width "x" "n"
+The underlying inline function for
+.Fn LOGBITS .
+Prints exactly
+.Fa n
+bits of the 64-bit value
+.Fa x ,
+starting from the most significant bit of the specified width down to the 0th bit.
+.El
+.Sh RETURN VALUES
+.Fn TEST_BIT
+returns a boolean-like integer (0 or non-zero).
+.Pp
+.Fn CLZ
+and
+.Fn CTZ
+return the exact bit-width of the evaluated type (32 or 64) if
+.Fa x
+is exactly 0. Otherwise, they return the count of leading or trailing zeros respectively.
+.Pp
+.Fn POPCNT
+returns the number of set bits (0 if
+.Fa x
+is 0).
+.Pp
+.Fn BSR
+returns the index of the highest set bit. To avoid ambiguity with bit index 0 (which represents the value 1),
+.Fn BSR
+returns -1 if
+.Fa x
+is exactly 0.
+.Pp
+.Fn POPLSB64
+and
+.Fn POPMSB64
+return the index of the cleared bit. If the value pointed to by
+.Fa p
+is already 0, the memory is left unmodified and both macros return -1.
+.Sh CAVEATS
+The type-generic macros require a compiler supporting C11
+.Ic _Generic
+and GCC/Clang built-in functions
+.Pq Fn __builtin_* .
+They strictly match against unsigned integer types. Passing signed integers will result in a compile-time error.
+.Pp
+The debugging function
+.Fn logbits_width
+uses the custom type
+.Vt u64 .
+This assumes that a definition such as
+.Ic typedef uint64_t u64;
+is available in the encompassing environment.
