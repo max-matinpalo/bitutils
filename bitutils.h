@@ -73,15 +73,15 @@
 // Returns -1 if x is 0 to avoid ambiguity with bit index 0 (which means x == 1).
 #define BSR32(x) ({ \
 	unsigned int _x = (x); \
-	_x == 0 ? -1 : 31 - CLZ32(_x); \
+	_x == 0 ? -1 : 31 - __builtin_clz(_x); \
 })
 #define BSR64(x) ({ \
 	unsigned long long _x = (x); \
-	_x == 0 ? -1 : 63 - CLZ64(_x); \
+	_x == 0 ? -1 : 63 - __builtin_clzll(_x); \
 })
 #define BSRLONG(x) ({ \
 	unsigned long _x = (x); \
-	_x == 0 ? -1 : (int)(sizeof(long) * 8 - 1) - CLZLONG(_x); \
+	_x == 0 ? -1 : (int)(sizeof(long) * 8 - 1) - __builtin_clzl(_x); \
 })
 #define BSR(x) _Generic((x), \
 	unsigned int: BSR32(x), \
